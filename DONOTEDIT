@@ -1,0 +1,8 @@
+# Find your printer's name in your distro's printer settings.
+PrinterName="EPSON_L3110_SERIES"
+
+# Where to start looking on clicking "select file"
+defaultPath="$HOME/Downloads"
+
+# Default page size
+MediaSize="A4"

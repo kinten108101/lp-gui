@@ -1,133 +1,222 @@
-#!/bin/bash
+##!/bin/bash
 
+function config_check () {
+	configDir="$HOME"
+	configName=".profile-lp-gui"
+	currentDir=$(dirname $0)
 
-#TBA
-# print odd/even pages only
-# print n pages per side
-# Choose ps 
-# Setting files
-#	Long binding edge, short binding edge support
-#
-#
-#   Short binding edge: rotate 180 degrees for pass 2, -o orientation-requested=6
-#
-#
-#
-#	Print mechanism: send each page instead of one bulk, for better monitoring
-#	Format: A4, A2, LETTER,...        -o media=size
-#   N Copies: 
-#	n pages per sheet: -o number-up={2|4|6|9|16}
-#	Quality, best always: -o print-quality=5
-#	Default maximum page (DONE
-#
-# BUG:
-#	- filename with spaces error (Fixed by adding double quotes)
-#   - can't check if file exists (Fixed by writing $HOME/.duplexpr instead of ~/.duplexpr)
-#
-# PLAN: 
-#       BLUETOOTH FROM PHONE
-#		LAN FROM PHONE (NPM APP)
-#
-#
-#
-title="Linux Print"
-MenuOneText="Use default printing strategy of EPSON L3110"
-
-config=".duplexpr"
-configPref="Duplex Print"
-
-position="--posx 600 --posy 300"
-size="--width 500 --height 300"
-opt="$position $size --on-top --fixed"
-if [ -d "$HOME/$config" ]; then echo "Yes"; else echo "$configPref" > "$config"; fi
-
-case "$1" in 
-	-c|--cunt) echo "c"; shift;;
-	-d|--dick) echo "d"; shift;;
-esac
-
-
-
-output=$(yad ${opt} --title "${title}" --form --field="Select file":FL --field="Start Page":CE --field="End Page":CE --text "${MenuOneText}")
-[ $? -ne 0 ] && exit 1
-file=$(cut -f1 -d'|' <<<${output})
-echo -e "\n$0\n"
-echo -e "\n$output\n"
-echo -e "\n$file\n"
-if [[ $file == "" ]]; then
-	echo -e "Yes something is wrong"
-fi
-x=$(cut -f2 -d'|' <<<${output})
-if [[ $x == "" ]] || [ $x < 1 ]; then
-	x=1
-fi
-y=$(cut -f3 -d'|' <<<${output})
-if [[ $y == "" ]]; then
-	y=$(pdfinfo "$file")
-	if [ $? -ne 0 ]; then
-		yad ${opt} --text "Error: file could not by read by pdfinfo."
-		exit 1
+	if [[ -a "$configDir/$configName" ]]; then
+		source "$configDir/$configName";
 	else
-		y=$(pdfinfo "$file" | sed -n 's/Pages//p' | sed 's/\://g' | sed 's/ //g')
+		cp $currentDir/DONOTEDIT $configDir/$configName;
+		source "$configDir/$configName";
 	fi
-elif [ $x >= $y ]; then
-	# show a warning
-	yad ${opt} --text "Failed page number"
-fi
 
+	title="Linux Print"
+	
+	opt="--posx 600 --posy 300 --width 500 --height 300 --on-top"
+	optWarning="--posx 700 --posy 400 --width 200 --height 100 --on-top --fixed --button="Close":1 --title "Error""
 
-# max check
-if [ $x < 1 ]; then
-	x=1
-fi
+	## so far this is the only way. The checkbox's options must be input from a string, the default option being signified by ^. 
+	MediaSizeInput=""
+	case $MediaSize in
+		A4) MediaSizeInput='^A4!Letter!Legal';;
+		Letter) MediaSizeInput='A4!^Letter!Legal';;
+		Legal) MediaSizeInput='A4!Letter!^Legal';;
+	esac
+}
 
-odd=""
-even=""
-range=$(seq $x $y)
-if [ $? -ne 0 ]; then
-	( yad ${opt} --text "Error: could not identify printing range." --button=gtk-ok:1; exit 1 )
-else
-	for number in $range
+function lpStatusCheck () {
+	case $1 in
+		1) yad $optWarning --text "Command was unsuccessfully executed, parameter inputs may be corrupted."; exit 1;;
+		2) n=$NumberCopies; restart=1;;
+		3) yad ${optWarning} --text "Cancelled manually."; exit 0;;
+	esac
+}
+
+function user_start () {
+	restart=1
+	while [[ $restart -eq 1 ]]
 	do
-		# echo $number
-		if [ $((number % 2)) -eq 0 ]; then
-			even="${even},${number}"
-		else 
-			odd="${odd},${number}" 
-		fi
-	done
-fi
-# purge, by cutting the first comma
-odd=$(echo $odd | sed 's/,//')
-even=$(echo $even | sed 's/,//')
+		restart=0
+		config_check;
+		MenuOneText="Use default printing scheme of EPSON L3110.\n
+It is recommended that a test batch be printed out first to make sure your printer has the same printing scheme.\n
+As a temporary measure, leave the page range blank to print the whole file.\n"
 
-yad $opt --title "Print Queue" --text "File:\t${file}\nPass 1:\t${odd}\nPass 2:\t${even}"\
- --button="Test":2 --button="Print":0 --button="Cancel":1
-status=$?
-if [ $status -eq 0 ]; then
-	lp -P ${odd} "$file"
-	yad ${opt}\
-	 --text \
-	 "Printing Pass 1 (odd)\n\
-	 Once completed, rotate the processed sheets 180 degrees vertically, then reinsert them.\n\
-	 Click OK to continue.\n\
-	 You can cancel the print job from here if anything goes wrong, but this is not recommended."
-	if [ $? -eq 0 ]; then
-		lp -P ${even} "$file"
-		yad ${opt} --text "Printing Pass 2 (odd).\n"
-	else
-	  	yad ${opt} --text "Pass 2 Canceled." --button=gtk-ok:0
-	fi
-elif [ $status -eq 2 ]; then
-	page=$(cut -f1 -d',' <<< ${odd})
-	lp -P ${page} "$file"
-	yad ${opt} --text "Printing one page of Pass 1. \nOnce completed, rotate the processed sheets 180 degrees vertically, then reinsert them.\nClick OK to continue."
-	if [ $? -eq 0 ]; then
-		page=$(cut -f1 -d',' <<< ${even})
-		lp -P ${page} "$file"
-	else
-		yad ${opt} --text "An error occurred." --button=gtk-ok:0
-	fi
-else
+		
+		
+		output=$(yad ${opt} --title "${title}" --text "${MenuOneText}" --form\
+			--field="Select file":FL --field="Start Page":NUM --field="End Page":NUM --field="Media Size":CB --field="Number of Copies":NUM\
+			"${defaultPath}" "" "" $MediaSizeInput "1" )
+		[ $? -ne 0 ] && exit 1
+
+
+		file="$(cut -f1 -d'|' <<<${output})"
+		
+		if [[ "$file" == "${defaultPath}" ]]; then yad ${optWarning} --text="No file selected."; exit 1; fi
+
+		x=$(cut -f2 -d'|' <<<${output})
+		if [[ $x == ""  ||  $x -lt 1 ]]; then x=1; fi
+
+		y=$(cut -f3 -d'|' <<<${output})
+		
+		
+		
+		maxPage=$(pdfinfo "$file")
+		if [[ $? -ne 0 ]]; then
+			pdfinfo -v
+			if [[ $? -ne 0 ]]; then
+				yad ${optWarning} --text "File could not be read by pdf-info.\nPdf-info properly installed."
+				exit 1
+			else
+				yad ${optWarning} --text "\nFile was not a pdf."
+				exit 1
+			fi
+		fi
+		maxPage=$(pdfinfo "$file" | sed -n 's/Pages//p' | sed 's/\://g' | sed 's/ //g')
+		if [[ $y -le 0 || $y -gt $maxPage ]]; then y=$maxPage; fi
+
+		if [[ $x -gt $y ]]; then
+			yad ${optWarning} --text "Failed page numbering. This should not happen."
+		fi
+		
+		## Reset variables
+		odd=""
+		oddDisplay=""
+		even=""
+		evenDisplay=""
+		range=$(seq $x $y)
+		## debug
+		## echo $range
+		## echo "$y is y"
+		## echo ""
+		if [[ $? -ne 0 ]]; then
+			( yad ${optWarning} --text "could not identify printing range." --button=gtk-ok:1; exit 1 )
+		else
+			for number in $range
+			do
+				if [[ $((number % 2)) -eq 0 ]]; then
+					even="${even},${number}"
+				else 
+					odd="${odd},${number}" 
+				fi
+			done
+			
+			if [[ $y -gt 99 ]]; then
+				## Avoid editing even and odd, so seq must be reperformed.
+				range=$(seq $x 99)
+				for number in $range
+				do
+					if [[ $((number % 2)) -eq 0 ]]; then
+						evenDisplay="${evenDisplay},${number}"
+					else 
+						oddDisplay="${oddDisplay},${number}" 
+					fi
+				done
+				evenDisplay="${evenDisplay}..."
+				oddDisplay="${oddDisplay}..."
+			else
+				evenDisplay=$even
+				oddDisplay=$odd
+			fi
+		fi
+
+
+
+		## Cutting some corners
+		odd=$(echo $odd | sed 's/,//')
+		oddDisplay=$(echo $oddDisplay | sed 's/,//')
+		even=$(echo $even | sed 's/,//')
+		evenDisplay=$(echo $evenDisplay | sed 's/,//')
+		## Test pages will complicate the while loop further, so this will be reconsidered
+		testFirst=$(cut -f1 -d',' <<< ${odd})
+		testSecond=$(cut -f1 -d',' <<< ${even})
+
+
+		#NumberUp=$(cut -f4 -d'|' <<<${output})
+		MediaSize=$(cut -f4 -d'|' <<<${output})
+		## temporary check based on observations. 1 is the default value for MediaSize when its checkbox init fails.
+		if [[ $MediaSize == 1 ]]; then yad ${optWarning} --text "Configuration file is not loaded or corrupted." ; exit 1; fi
+		NumberCopies=$(cut -f5 -d'|' <<<${output})
+		# debug: echo "$NumberCopies is the number of copies"
+		if [[ $NumberCopies < 1 ]]; then NumberCopies=1; fi
+
+		
+		optPrt=""
+
+		yad $opt --title "Print Queue" --text "File:\t${file}\nPass 1:\t${oddDisplay}\nPass 2:\t${evenDisplay}"\
+		 --button="Print":0 --button="Cancel":1
+		lpStatusCheck $?;
+
+		n=0
+		optButton=""
+
+		## loop for number of Copies
+		while [[ $n -lt $NumberCopies ]]
+		do
+			TextCheckOne="Printing Pass 1 (odd)\n
+Once completed, rotate the processed sheets 180 degrees vertically, then reinsert them.\n
+$(( $NumberCopies - $n - 1 )) copies left."
+			TextCheckTwo="Printing Pass 2 (even)\n
+$(( $NumberCopies - $n - 1 )) copies left."
+
+							
+			lp -P ${odd} "$file" -d "${PrinterName}" -o media="${MediaSize}"
+			lpStatusCheck $?;
+
+			if [[ $even != "" ]]; then
+				optButton="--button="Restart":2 --button="Continue":0 --button="Cancel":3"
+				yad ${opt}\
+				 --text "$TextCheckOne"\
+				 ${optButton};
+				lpStatusCheck $?;
+
+				
+				lp -P ${even} "$file" -d "${PrinterName}" -o media="${MediaSize}"
+				lpStatusCheck $?;		
+				
+				if [[ $restart -eq 0 ]]; then
+					if [[ n -ne $(( $NumberCopies - 1 )) ]]; then
+						optButton="--button="Restart":2 --button="Continue":0 --button="Cancel":3"
+						yad ${opt}\
+							--text "$TextCheckTwo"\
+							${optButton};
+						statFinal=$?
+						
+					else
+						optButton="--button="Restart":2 --button="Finish":0;"
+						yad ${opt}\
+							--text "$TextCheckTwo"\
+							${optButton};
+						statFinal=$?
+					fi
+				fi
+			## Remote scenario where there is one page in file
+			else
+				if [[ $n -ne $(( $NumberCopies - 1 )) ]]; then
+					optButton="--button="Restart":2 --button="Continue":0 --button="Cancel":3"
+					yad ${opt}\
+						--text "$TextCheckOne"\
+						${optButton};
+					statFinal=$?
+					
+				else
+					optButton="--button="Restart":2 --button="Finish":0;"
+					yad ${opt}\
+						--text "$TextCheckOne"\
+						${optButton};
+					statFinal=$?
+				fi
+			fi
+			
+			n=$(( $n + 1 ))
+			lpStatusCheck $statFinal;
+			
+		done
+	done
+}
+## arg_check
+
+user_start
 exit 0
-fi
