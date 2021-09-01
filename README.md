@@ -1,4 +1,4 @@
-# Linux simplex Print with Graphical User Interface.
+# LP-GUI, Linux-based Emulated Duplex Printing with GUI
 
 ## Description
 
@@ -51,7 +51,7 @@ You could copy lp-gui to `home/[username]/bin`, a directory that should be inclu
 
     $ lp-gui
 
-If you are against moving the file around, perhaps add this repo's folder to PATH directly.
+If you are against moving the file around, perhaps add this repo's folder to `PATH` directly.
 Open `home/[username]/.profile` (create one if it does not exist). Add this line to the end of the file:
 
     $ x="[path to repo's clone]"
