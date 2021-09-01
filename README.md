@@ -7,7 +7,7 @@ A printing GUI which port essential printing features from those on Windows to L
 ## Feature
 
 - Emulated duplex (double-sided) printing for otherwise unsupported printers (tested on Epson L3110)
-- Printing schemes from duplex-pr\*
+- Support for printing strategies from [josephj11's duplex utility script](https://sourceforge.net/projects/duplexpr/)\*
 - Fixed page range
 - Formulaic page range\*
 - Long/short binding edge\*
