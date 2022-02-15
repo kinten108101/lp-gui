@@ -1,4 +1,4 @@
-# LP-GUI, Linux-based Emulated Duplex Printing with GUI
+# LP-GUI, Linux-based duplex printing with GUI
 
 ## Description
 
