@@ -1,5 +1,7 @@
 # LP-GUI, Linux-based duplex printing with GUI
 
+(This project is being remade. See gnome-manual-duplex, a more viable alternative!)
+
 ## Description
 
 A user-friendly printing GUI which port essential printing features from those on Windows to Linux. CUPS (Common UNIX Printing System) is mostly available on Linux distros but are terminal-based and unintuitive to navigate through. This is an unofficial extension for CUPS and also doubles as a testing ground for experimental features.
@@ -71,7 +73,7 @@ For those who don't know how this works, check out [environmental variables](htt
 
 ## Compatibility
 
-Tested on Ubuntu 20.04, should work on most distros that use bash.
+Tested on Ubuntu 20.04.
 Windows will be considered, although there should be no need as there are already well-equipped pdf-readers (Adobe Acrobat, Foxit Reader) with these features.
 
 ## TBA
